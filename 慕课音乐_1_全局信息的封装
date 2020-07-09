@@ -1,0 +1,122 @@
+
+总结：这部分是定义项目的基础配置
+1.创建MyApplication.class文件，进行全局初始化的操作
+2.创建BaseActivity.class文件，封装activity中公共的逻辑代码
+3.创建欢迎页面WelcomeActivity
+4.创建一个nav_bar.xml，封装App的顶部导航栏的布局样式
+5.在BaseActivity中封装NavBar的几种显示样式
+
+
+知识点一：创建MyApplication.class文件
+
+第一步：创建MyApplication.class文件，里面主要做一些初始化的工作(Utils的初始化，Realm初始化等)，实例：
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        //工具类的初始化操作
+        Utils.init(this);
+        Realm.init(this);
+        RealmHelp.migration();}}
+
+
+
+
+知识点二：创建BaseActivity.class文件
+
+第一步：创建BaseActivity.class文件，里面主要是封装一些许多activity中使用到的公共的功能模块，实例：
+public class BaseActivity extends Activity {
+    //对控件绑定的方法findViewById()进行简化，后续可以在所有的actvity中使用这个简化的fd()方法
+    protected <T extends View> T fd (@IdRes int id) {
+        return findViewById(id);}}
+
+
+
+
+知识点三：创建欢迎页面WelcomeActivity及其布局文件activity_welcome.xml
+
+第一步：在AndroidManifest.xml文件中设置WelcomeActivity为启动App后默认进入的Activity，实例：
+<activity android:name=".activity.WelcomeActivity">
+     <intent-filter>
+             //设置Activity为启动Activity
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+     </intent-filter>
+</activity>
+
+第二步：将WelcomeActivity继承BaseActivity，并且实现后续页面的跳转(先跳转到LoginActivity，再跳转到MainActivity)，实例：
+public class WelcomeActivity extends BaseActivity {
+    //定义一个Timer对象   
+    private Timer mTimer;   
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_welcome);
+        init();   //init()方面的里面就是页面跳转的逻辑
+    }
+
+第三步：在WelcomeActivity的init()方法中实现页面的跳转逻辑，实例：
+//实现页面的延迟跳转
+private void init() {
+     //得到一个Timer对象
+     mTimer = new Timer();
+     mTimer.schedule(new TimerTask(){
+            @Override
+            public void run() {
+                toLogin();
+                if (isLogin) {
+                    toMain();   //toMain()方法就是跳转到MainActivity的界面
+                }else {
+                    toLogin();  //toLogin()方法就是跳转到LoginActivity的界面
+                }
+           }
+      }, 3*1000);  //schedule()方法的第二个参数就是需要延迟delay的时间
+}
+
+第四步：在WelcomeActivity中创建toMain()方法和toLogin()方法，实例：
+//跳转到MainActivity，toLogin()方法也是这样
+private void toMain() {
+    Intent intent = new Intent(this, MainActivity.class);
+    startActivity(intent);
+    finish();}
+
+
+
+
+知识点四：创建一个nav_bar.xml，封装App的顶部导航栏的布局样式
+
+
+
+
+知识点五：在BaseActivity中封装NavBar的几种显示样式
+
+第一步：在BaseActivity中定义NavBar的显示方法initNavBar()，参数就是NavBar的几个组件的显示Flag，实例：
+public class BaseActivity extends Activity {
+    //定义NavBar的几个组件的实例对象
+    private ImageView mIvBack, mIvMe;
+    private TextView mTvTitle;
+    protected void initNavBar (boolean isShowBack, String title, boolean isShowMe) { ... }
+
+第二步：在initNavBar()方法中：1.绑定NavBar的三个组件，设置这三个组件的显示情况
+protected void initNavBar (boolean isShowBack, String title, boolean isShowMe) {
+    //绑定NavBar的几个组件
+    mIvBack = fd(R.id.iv_back);
+    mTvTitle = fd(R.id.tv_title);
+    mIvMe = fd(R.id.iv_me);
+    //NavBar的三个组件的显示情况(受到Flag的影响)
+    mIvBack.setVisibility(isShowBack ? View.VISIBLE : View.GONE);
+    mIvMe.setVisibility(isShowMe ? View.VISIBLE : View.GONE);
+    mTvTitle.setText(title);
+
+第三步：在initNavBar()方法中：2.设置NavBar中组件的事件监听，实例：
+mIvBack.setOnClickListener(new View.OnClickListener(){
+     @Override
+     public void onClick(View v){
+           onBackPressed();}});
+mIvMe.setOnClickListener(new View.OnClickListener(){
+     @Override
+     public void onClick(View v){
+           startActivity(new Intent(BaseActivity.this, MeActivity.class));}});
+
+
+
+
