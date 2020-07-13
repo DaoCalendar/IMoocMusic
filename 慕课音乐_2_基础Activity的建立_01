@@ -1,1 +1,42 @@
 
+总结：这部分是
+1.
+2.
+3.
+
+
+
+
+知识点一：创建登录页面LoginActivity及其布局文件activity_login.xml
+
+第一步：在activity_login.xml布局文件中引入nav_bar.xml布局样式，实例：
+<include layout="@layout/nav_bar"/>
+
+第二步：在activity_login.xml布局文件中引入分割线样式，实例：
+<View style="@style/line"/>
+
+
+
+
+知识点二：创建InputView.class文件和input_view.xml布局文件
+
+第一步：创建InputView.class文件，里面封装输入框InputView的组件及其相应的内容，
+1.首先实现InputView的所有构造函数，实例：
+public class InputView extends FrameLayout{ 
+   //定义三个变量来存放传入的三个属性值
+    private int inputIcon;
+    private String inputHint;
+    private boolean isPassword;
+
+    private View mView;
+    private ImageView mIvIcon;
+    private EditText mEtInput;
+
+    public InputView(@NonNull Context context) {
+        super(context);
+        init(context, null);}
+    ... }   //需要实现InputView的所有构造函数
+
+第二步：在InputView中：2.创建InputView的初始化方法init()
+
+第三步：
