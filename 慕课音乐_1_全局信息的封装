@@ -82,8 +82,24 @@ private void toMain() {
 
 
 
-知识点四：创建一个nav_bar.xml，封装App的顶部导航栏的布局样式，实例：
+知识点四：创建一个nav_bar.xml，封装App的顶部导航栏的布局样式，
+
+第一步：在nav_bar.xml文件中定义顶部导航栏的布局内容，实例：
 FrameLayout -> ImageView + TextView + ImageView
+
+第二步：在activity_login.xml中使用自定义导航栏布局样式，实例：
+<include layout="@layout/nav_bar"/>
+
+第三步：在LoginActivity中初始化nav_bar布局，实例：
+public class LoginActivity extends BaseActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+       ... 
+       initView();}
+       
+    private void initView () {
+        initNavBar(false, "登录", false);}}   
+
 
 
 
