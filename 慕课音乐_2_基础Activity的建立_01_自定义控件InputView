@@ -1,0 +1,106 @@
+
+总结：这部分是创建自定义控件InputView，并在activity_login.xml布局文件中使用自定义的InputView
+1.创建登录页面LoginActivity及其布局文件activity_login.xml
+2.在项目的res文件夹中创建自定义属性文件attrs.xml，里面放置inputView的自定义属性
+3.创建InputView.class文件和input_view.xml布局文件(LinearLayout -> ImageView + EditText)
+4.在activity_login.xml布局文件中使用自定义的InputView
+
+
+
+知识点一：创建登录页面LoginActivity及其布局文件activity_login.xml
+
+第一步：在activity_login.xml布局文件中引入nav_bar.xml布局样式，实例：
+<include layout="@layout/nav_bar"/>
+
+第二步：在activity_login.xml布局文件中引入分割线样式，实例：
+<View style="@style/line"/>
+
+
+
+
+知识点二：在项目的res文件夹中创建自定义属性文件attrs.xml，里面放置inputView的自定义属性
+
+第一步：自定义属性文件attrs.xml的格式：最外部是resources标签，里面是申明样式的declare-styleable标签，最里面是定义属性的attr标签，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--声明样式-->
+    <declare-styleable name="inputView">
+        <!--输入框前面的小图标-->
+        <attr name="input_icon" format="reference"></attr>
+        <!--输入框提示内容-->
+        <attr name="input_hint" format="string"></attr>
+        <!--输入框是否需要以密文展示-->
+        <attr name="is_password" format="boolean"></attr>
+    </declare-styleable>
+</resources>
+
+
+
+
+知识点三：创建InputView.class文件和input_view.xml布局文件(LinearLayout -> ImageView + EditText)
+
+第一步：创建InputView.class文件，里面封装输入框InputView的组件及其相应的内容，
+1.首先实现InputView的所有构造函数，实例：
+public class InputView extends FrameLayout{ 
+   //定义三个变量来存放传入的三个属性值
+    private int inputIcon;
+    private String inputHint;
+    private boolean isPassword;
+
+    private View mView;
+    private ImageView mIvIcon;
+    private EditText mEtInput;
+
+    public InputView(@NonNull Context context) {
+        super(context);
+        init(context, null);}
+    ... }   //需要实现InputView的所有构造函数
+
+第二步：在InputView中：2.创建InputView的初始化方法init()，
+在init()方法需要：1.传入参数Context和AttributeSet，获取自定义属性，实例：
+private int inputIcon;
+private String inputHint;
+private boolean isPassword;  //InputView中的三个属性
+private View mView;
+private ImageView mIvIcon;
+private EditText mEtInput;  //InputView中的三个布局控件
+//初始化方法
+private void init (Context context, AttributeSet attrs) {
+  if (attrs == null) return;
+  //获取自定义属性TypedArray，使用完后需要手动释放TypedArray
+  TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.inputView);
+  inputIcon = typedArray.getResourceId(R.styleable.inputView_input_icon, R.mipmap.logo);
+  inputHint = typedArray.getString(R.styleable.inputView_input_hint);
+  isPassword = typedArray.getBoolean(R.styleable.inputView_is_password, false);
+  typedArray.recycle();  //手动释放TypedArray
+
+
+第三步：在InputView中的init()方法中需要：2.绑定layout布局input_view.xml中的控件，同时布局关联属性，实例：
+//绑定layout布局
+mView = LayoutInflater.from(context).inflate(R.layout.input_view, this, false);
+mIvIcon = mView.findViewById(R.id.iv_icon);
+mEtInput = mView.findViewById(R.id.et_input);
+//布局关联属性
+mIvIcon.setImageResource(inputIcon);
+mEtInput.setHint(inputHint);   //setHint()方法就是设置显示内容为Hint显示
+//isPassword为true的情况，InputType是密文形式；isPassword为false的情况，InputType是手机号的形式
+mEtInput.setInputType(isPassword ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD : InputType.TYPE_CLASS_PHONE);
+addView(mView);
+
+第四步：在InputView中的init()方法中需要：3.返回输入的内容
+//返回输入的内容
+public String getInputStr () {
+  return mEtInput.getText().toString().trim();}
+
+第五步：在activity_login.xml布局文件中使用自定义的InputView，实例：
+<com.sunday.imoocmusicdemo.views.InputView   //使用自定义InputView
+   android:id="@+id/input_phone"
+   android:layout_width="match_parent"
+   android:layout_height="@dimen/inputViewHeight"
+   android:layout_marginTop="@dimen/marginSize"
+   app:input_icon="@mipmap/phone"   //使用自定义属性时前面的标签是app
+   app:input_hint="手机号"
+   app:is_password="false">
+
+
+
