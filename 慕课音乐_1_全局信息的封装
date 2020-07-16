@@ -82,7 +82,8 @@ private void toMain() {
 
 
 
-知识点四：创建一个nav_bar.xml，封装App的顶部导航栏的布局样式
+知识点四：创建一个nav_bar.xml，封装App的顶部导航栏的布局样式，实例：
+FrameLayout -> ImageView + TextView + ImageView
 
 
 
