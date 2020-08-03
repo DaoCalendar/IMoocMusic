@@ -1,0 +1,65 @@
+
+总结：这部分是完善LoginActivity的布局文件activity_login.xml
+1.在activity_login.xml中使用自定义的分割线line样式
+2.在activity_login.xml中使用自定义的登录按钮的样式
+3.在res文件夹的styles.xml文件中定义分割线的样式，定义自定义登录按钮的样式
+
+
+
+知识点一：在res文件夹的styles.xml文件中定义分割线的样式，定义自定义登录按钮的样式
+
+第一步：res文件夹 -> values文件夹 -> styles.xml，在里面定义各种自定义样式，
+这里定义分割线line的样式，实例：
+<resources>
+    <!--分割线-->
+    <style name="line">   //自定义分割线line的样式
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:background">@color/lineColor</item>
+        <item name="android:layout_margin">@dimen/marginSize</item>
+    </style>
+</resources>
+
+第二步：在activity_login.xml中使用自定义的分割线line样式，实例：
+<View
+     style="@style/line"/>   //这里可以类比使用nav_bar的自定义样式:<include layout="@layout/nav_bar"/>
+
+第三步：在activity_login.xml中使用自定义的登录按钮的样式，实例：
+    <Button
+        style="@style/commitBtn"         //设置按钮的样式为自定义的登录按钮的样式
+        ... />
+
+
+
+
+
+知识点二：在res文件夹的styles.xml文件中定义自定义的登录按钮的样式
+
+第一步：在styles.xml文件中封装自定义的登录按钮的样式，实例：
+<!--登录按钮-->
+<style name="commitBtn">
+     <item name="android:layout_width">match_parent</item>
+     <item name="android:layout_height">@dimen/btnHeight</item> ...
+     <item name="android:background">@drawable/btn_commit_select</item>  //这里使用的是自定义样式选择器来设置点击按钮时的样式
+</style>
+
+第二步：在drawable文件夹中创建一个按钮点击时的样式选择器btn_commit_select.xml，里面定义的是按钮点击、选择时的样式，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--View 高亮-->
+    <item android:state_focused="true" android:drawable="@drawable/commit_btn_h"/>     
+    <item android:state_pressed="true" android:drawable="@drawable/commit_btn_h"/>   //点击时按钮的样式是高亮状态
+    <item android:state_selected="true" android:drawable="@drawable/commit_btn_h"/>
+    <!-- View 默认 -->
+    <item android:drawable="@drawable/commit_btn_n"/>           //默认不点击时按钮的样式
+</selector>
+
+第三步：在drawable文件夹中创建一个按钮高亮的样式和按钮不高亮的样式commit_btn_h.xml、commit_btn_n.xml，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 实体颜色 -->
+    <solid android:color="@color/mainColorH"/>          //这是按钮高亮的样式，不高亮的样式就设置color属性为mainColor
+    <!-- 弧度 -->
+    <corners android:radius="@dimen/radius"/>
+</shape>
