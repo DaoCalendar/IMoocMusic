@@ -1,0 +1,74 @@
+
+总结：这部分是完善登录页面LoginActivity
+1.完善LoginActivity中的点击事件，并在里面进行输入合法性验证
+2.创建一个UserUtils工具类，里面放置的是和用户User相关的操作方法(验证用户输入合法性的方法validateLogin())
+
+
+
+知识点一：完善LoginActivity中的点击事件，并在里面进行输入合法性验证
+
+第一步：在LoginActivity中需要：1.创建一个initView()方法，并在onCreate()方法中调用initView()方法，
+initView()方法中是对activity_login.xml布局文件中的控件进行绑定，实例：
+public class LoginActivity extends BaseActivity {
+    private InputView mInputPhone, mInputPassword;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
+        initView();}             //在onCreate()方法中进行界面的初始化操作initView()
+    //初始化View 
+    private void initView () {      //在initView()中绑定控件，初始化控件
+        initNavBar(false, "登录", false);
+        mInputPhone = fd(R.id.input_phone);
+        mInputPassword = fd(R.id.input_password);}  
+
+
+第二步：在LoginActivity中需要：2.实现登录按钮的点击事件，实例：
+    //登录
+    public void onCommitClick (View v) {
+        String phone = mInputPhone.getInputStr();
+        String password = mInputPassword.getInputStr();
+        //验证用户输入是否合法
+        if (!UserUtils.validateLogin(this, phone, password)) {     //这里需要创建一个UserUtils工具类，里面放置输入合法性验证的方法validateLogin()
+            return;}
+        //跳转到应用主页
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();}
+
+第三步：在LoginActivity中需要：3.实现注册按钮的点击事件，实例：
+    //跳转注册页面点击事件
+    public void onRegisterClick (View v) {
+        Intent intent = new Intent(this, RegisterActivity.class);
+        startActivity(intent);}
+
+
+
+
+
+
+知识点二：创建一个UserUtils工具类，里面放置的是和用户User相关的操作方法(验证用户输入合法性的方法validateLogin())
+
+第一步：在使用UtilCode框架之前，需要在MyApplication中初始化Utilcode框架，实例：
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Utils.init(this);}
+
+
+第二步：在UserUtils中创建验证登录用户输入合法性的方法validateLogin()，实例：
+    
+    //验证登录用户输入合法性
+    public static boolean validateLogin (Context context, String phone, String password) {
+        //简单的
+        //RegexUtils.isMobileSimple(phone);
+        //精确地
+        if (!RegexUtils.isMobileExact(phone)) {
+            Toast.makeText(context, "无效手机号", Toast.LENGTH_SHORT).show();
+            return false;}
+        if (TextUtils.isEmpty(password)) {
+            Toast.makeText(context, "请输入密码", Toast.LENGTH_SHORT).show();
+            return false;}
+        return true;}
+
