@@ -1,0 +1,63 @@
+
+总结：这部分是创建主界面MainActivity和个人中心页面MeActivity
+1.创建主界面MainActivity及其布局文件activity_main.xml
+2.创建个人中心页面MeActivity及其布局文件activity_me.xml
+3.完善个人中心界面MeActivity里的各个控件的逻辑
+
+
+
+知识点一：创建主界面MainActivity及其布局文件activity_main.xml
+
+第一步：在MainActivity中需要：1.首先还是定义initView()，将主界面的导航栏NavBar设置好，实例：
+public class MainActivity extends BaseActivity {
+    ...
+    private void initView () {
+        initNavBar(false, "慕课音乐", true);}
+    private void initData () {
+        //TODO 加载数据到主界面之中}
+
+
+
+
+知识点二：创建个人中心页面MeActivity及其布局文件activity_me.xml
+
+第一步：在activity_me.xml布局文件中设置个人中心界面的样式，需要注意的是
+LinearLayout -> nav_bar(顶部导航栏) + TextView + TextView(这里需要用到一个颜色选择器) + Button
+
+第二步：在drawable文件夹中定义颜色选择器item_commit_select.xml文件，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--View高亮-->
+    <item android:state_focused="true" android:drawable="@drawable/commit_item_h"/>
+    <item android:state_pressed="true" android:drawable="@drawable/commit_item_h"/>
+    <item android:state_selected="true" android:drawable="@drawable/commit_item_h"/>
+    <!--View默认-->
+    <item android:drawable="@drawable/commit_item_n"/>
+</selector>
+
+第三步：在drawable文件夹创建View高亮时的样式commit_item_h.xml和View默认的样式commit_item_n.xml文件，
+这两个样式就是颜色不同，其它相同，实例：
+<?xml version="1.0" encoding="utf-8"?>    //这是View高亮的样式commit_item_h.xml
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!--实体颜色-->
+    <solid android:color="@color/itemColorH"/>
+    <!--弧度-->
+    <corners android:radius="@dimen/radius"/>
+</shape>
+
+
+
+
+知识点三：完善个人中心界面MeActivity
+
+第一步：在MeActivity中需要：1.在initView()中初始化NavBar，实例：
+public class MeActivity extends BaseActivity {
+    private void initView () {
+        initNavBar(true, "个人中心", false);}
+
+第二步：在MeActivity中需要：2.定义修改密码按钮的点击事件onChangeClick()和退出登录按钮的点击事件onLogoutClick()，实例：
+    public void onChangeClick (View v) {
+          //TODO 跳转到修改密码的界面ChangePasswordActivity}
+    public void onLogoutClick (View v) {
+          UserUtils.logout(this);}     //在UserUtils工具类中创建一个退出登录logout()方法，也就是利用Intent回到登录页面LoginActivity
