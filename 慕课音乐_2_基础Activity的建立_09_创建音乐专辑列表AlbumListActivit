@@ -1,0 +1,42 @@
+
+总结：这部分是创建一个音乐专辑列表的界面AlbumListActivit
+1.创建一个音乐专辑列表的界面AlbumListActivity
+2.完善MusicGridAdapter，在里面设置RecyclerView中的ItemView的点击事件，点击之后直接跳转到AlbumListActivity界面中
+
+
+
+知识点一：创建一个音乐专辑列表的界面AlbumListActivity
+
+第一步：定义好音乐专辑列表的布局文件activity_album_list.xml
+
+第二步：在AlbumListActivity中创建initView()方法，在里面初始化顶部导航栏nav_bar，并且绑定布局文件中的控件，实例：
+public class AlbumListActivity extends BaseActivity {
+    private RecyclerView mRvList;
+    private MusicListAdapter mAdapter;
+
+    private void initView(){
+        initNavBar(true,"专辑列表", false);       //初始化顶部导航栏
+        mRvList = fd(R.id.rv_list);          //后面就是绑定控件，设置适配器了
+        mRvList.setLayoutManager(new LinearLayoutManager(this));
+        mRvList.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        mAdapter = new MusicListAdapter(this, null, mAlbumModel.getList());    //第二个参数是null，没有传入RecyclerView对象，说明不用计算RecyclerView的高度
+        mRvList.setAdapter(mAdapter);}
+
+
+
+
+
+
+知识点二：完善MusicGridAdapter，在里面设置RecyclerView中的ItemView的点击事件，点击之后直接跳转到AlbumListActivity界面中
+
+第一步：在MusicGridAdapter中的onBindViewHolder()方法中添加ViewHolde的ItemView的点击事件，实例：
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        Glide.with(mContext)
+                .load(albumModel.getPoster())
+                .into(viewHolder.ivIcon);
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, AlbumListActivity.class);
+                mContext.startActivity(intent);}});}
