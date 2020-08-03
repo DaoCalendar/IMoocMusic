@@ -1,0 +1,110 @@
+
+总结：这部分是实现主页的界面的"最热音乐"的RecyclerView的布局
+1.完成主页MainActivity的界面的最热音乐的RecyclerView的布局
+2.创建一个MusicListAdapter作为mRvList这个RecyclerView的适配器
+3.完善MusicListAdapter，在里面定义RecyclerView的高度计算方法，
+
+
+
+知识点一：完成主页MainActivity的界面的最热音乐的RecyclerView的布局
+
+第一步：在activity_main.xml中的推荐歌单的RecyclerView布局后面再建立一个同样的RecyclerView的布局样式
+
+第二步：在MainActivity中绑定这个最新创建的RecyclerView布局对象，绑定操作在initView()方法中进行，实例：
+public class MainActivity extends BaseActivity {
+
+    private RecyclerView mRvGrid, mRvList;       //mRvGrid和mRvList都是RecyclerView的布局控件
+    private MusicGridAdapter mGridAdapter;
+    private MusicListAdapter mListAdapter;
+    private void initView () {
+        initNavBar(false, "慕课音乐", true);
+
+        mRvGrid = fd(R.id.rv_grid);
+        mRvGrid.setLayoutManager(new GridLayoutManager(this,3));
+        mRvGrid.addItemDecoration(new GridSpaceItemDecoration(getResources().getDimensionPixelSize(R.dimen.albumMarginSize), mRvGrid));
+        mRvGrid.setNestedScrollingEnabled(false);       //这里是取消RecyclerView提供的单独的滑动
+        mGridAdapter = new MusicGridAdapter(this, mMusicSourceModel.getAlbum());
+        mRvGrid.setAdapter(mGridAdapter);
+        //1.假如已知RecyclerView的列表高度，则直接在布局中定义该高度
+        //2.不知道列表高度，手动计算RecyclerView的列表高度
+        mRvList = fd(R.id.rv_list);
+        mRvList.setLayoutManager(new LinearLayoutManager(this));
+        mRvList.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+        mRvList.setNestedScrollingEnabled(false);
+        mListAdapter = new MusicListAdapter(this, mRvList, mMusicSourceModel.getHot());
+        mRvList.setAdapter(mListAdapter);}
+
+第三步：创建一个MusicListAdapter作为mRvList这个RecyclerView的适配器，实例：
+01.在MusicListAdapter中：1.继承父类RecyclerView.Adapter<MusicListAdapter.ViewHolder>，泛型里面的ViewHolder就是在这个适配器中定义的ViewHolder，实例：
+public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.ViewHolder> {}
+
+02.在MusicListAdapter中：2.创建构造函数，将Context对象传进去，实例：
+    private Context mContext;
+    private RecyclerView mRv;
+    public MusicListAdapter(Context context, RecyclerView recyclerView, List<MusicModel> dataSource){
+        mContext = context;
+        mRv = recyclerView;}
+
+03.在MusicListAdapter中：3.实现父类的三个方法，实例：
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        mItemView = LayoutInflater.from(mContext).inflate(R.layout.item_list_music, viewGroup, false);
+        return new ViewHolder(mItemView);}
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {}
+    @Override
+    public int getItemCount() {}
+
+04.在MusicListAdapter中：4.创建一个自定义的ViewHolder，实例：
+    class ViewHolder extends RecyclerView.ViewHolder{}
+
+第四步：创建一个RecyclerView的item的布局文件item_list_music.xml
+
+
+
+
+
+知识点二：完善MusicListAdapter，在里面定义RecyclerView的高度计算方法，只有当RecyclerView和ScrollView重叠的时候才需要计算RecyclerVeiw的高度
+
+第一步：在MusicListAdapter中定义RecyclerView的高度计算方法setRecyclerViewHeight()，利用的是itemViewHeight * itemViewNum = RecyclerView的高度，实例：
+    private View mItemView;         //mItemView就是RecyclerView的根布局，在onCreateViewHolder()方法中就已经拿到了
+    private RecyclerView mRv;
+    private boolean isCalcaulationRvHeight;
+    //获取ItemView的高度
+    //获取ItemView的数量
+    //使用itemViewHeight * itemViewNum = RecyclerView的高度
+    private void setRecyclerViewHeight() {
+        if (isCalcaulationRvHeight || mRv == null) return;       //已经计算过了就不再次计算高度
+        isCalcaulationRvHeight = true;
+        //获取ItemView的高度
+        RecyclerView.LayoutParams itemViewLp = (RecyclerView.LayoutParams) mItemView.getLayoutParams();
+        //获取ItemView的数量
+        int itemCount = getItemCount();
+        //等到RecyclerView的高度
+        int recyclerViewHeight = itemViewLp.height * itemCount;
+        //设置RecyclerView的高度
+        LinearLayout.LayoutParams rvLp = (LinearLayout.LayoutParams) mRv.getLayoutParams();
+        rvLp.height = recyclerViewHeight;
+        mRv.setLayoutParams(rvLp);}
+
+第二步：使用setRecyclerViewHeight()计算RecyclerView的高度，在onBindViewHolder()中调用这个方法，实例：
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        setRecyclerViewHeight();}
+
+第三步：在MusicListAdapter中的onBindViewHolder()方法中给ViewHolder中的控件赋值对应的数据，实例：
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        setRecyclerViewHeight();
+        Glide.with(mContext)
+                .load("图片的网络地址")
+                .into(viewHolder.ivIcon);}
+    class ViewHolder extends RecyclerView.ViewHolder{
+        View itemView;
+        ImageView ivIcon;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            this.itemView = itemView;
+            ivIcon = itemView.findViewById(R.id.iv_icon);}}
+//最后还需要在MusicGridAdapter中重复上面的操作
+
