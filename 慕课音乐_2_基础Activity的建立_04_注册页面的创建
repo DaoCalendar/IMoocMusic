@@ -1,0 +1,75 @@
+
+总结：这部分是创建注册页面RegisterActivity，以及定义app中的所有Activity进行跳转的属性动画
+1.创建注册页面RegisterActivity和它的布局文件activity_register.xml，里面是用户注册相关的逻辑
+2.定义app中的所有Activity进行跳转的属性动画
+
+
+
+
+
+知识点一：创建注册页面RegisterActivity和它的布局文件activity_register.xml，里面是用户注册相关的逻辑
+
+第一步：在activity_register.xml布局文件中设置登录页面的样式，实例：
+//就是几个自定义的InputView
+
+第二步：在RegisterActivity中需要：1.创建一个初始化界面initView()的方法，
+initView()方法需要放到onCreate()方法之中，实例：
+    private void initView () {
+        initNavBar(true, "注册", false);  //先把Toolbar定义出来
+        mInputPhone = fd(R.id.input_phone);
+        mInputPassword = fd(R.id.input_password);
+        mInputPasswordConfirm = fd(R.id.input_password_confirm);}
+
+第三步：在RegisterActivity中需要：2.定义注册按钮的点击事件的逻辑onRegisterClick()，实例：
+    public void onRegisterClick (View v) {
+         //TODO 验证用户输入的数据的合法性，并将用户输入的数据保存到数据库中 }
+
+
+
+
+
+知识点二：定义app中的所有Activity进行跳转的属性动画
+
+第一步：在res文件夹下的styles.xml文件中定义Activity跳转的动画AnimationActivity，里面包含四个item，
+都是Activity跳转过程中所执行的动作，用单独的属性动画定义这四个item，实例：
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="AnimationActivity" parent="@android:style/Animation.Activity">    
+        <!-- 打开Activity时，新进入的Activity执行的动画-->
+        <item name="android:activityOpenEnterAnimation">@anim/open_enter</item>
+        <!--打开Activity时，原来的Activity所执行的动画-->
+        <item name="android:activityOpenExitAnimation">@anim/open_exit</item>
+        <!--退出Activity时，退出的Activity所执行的动画-->     //退出Activity，就是你点击后退按钮时的情况
+        <item name="android:activityCloseExitAnimation">@anim/close_exit</item>
+        <!--退出Activity时，重新显示的Activity所执行的动画-->
+        <item name="android:activityCloseEnterAnimation">@anim/close_enter</item>
+    </style>
+</resources>
+
+第二步：完成Activity跳转过程中这四个动作的属性动画，以open_enter.xml和open_exit.xml为例，实例：
+<?xml version="1.0" encoding="utf-8"?>      //这是open_enter.xml
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromXDelta="100%"        //从100%移动到0%，也就是从右往左的移动动画
+        android:toXDelta="0%"
+        android:duration="@integer/anim_duration"/>
+</set>
+
+<?xml version="1.0" encoding="utf-8"?>       //这是open_exit.xml
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <scale
+        android:fromXScale="1.0"        //这是一个缩放动画，Activity界面从1.0的宽度缩放到了0.8的宽度
+        android:fromYScale="1.0"       //fromXScale、fromYScale是初始状态下的宽度、高度
+        android:toXScale="0.8"
+        android:toYScale="0.8"        //toXScale、toYScale是结束状态下的宽度、高度
+        android:pivotX="50%"
+        android:pivotY="50%"       //这里是定义缩放中心，缩放动画以这个点为中心点进行缩放
+        android:duration="@integer/anim_duration"/>
+</set>
+
+第三步：在styles.xml文件中的AppTheme中定义windowAnimationStyle属性是我们的AnimationActivity，实例：
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimaryDark">@color/mainColor</item>
+        <item name="android:windowAnimationStyle">@style/AnimationActivity</item>
+    </style>
