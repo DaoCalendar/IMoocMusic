@@ -1,0 +1,107 @@
+
+总结：这部分是实现主页的界面的"推荐歌单"的RecyclerView的布局
+1.完成主页MainActivity的界面的推荐歌单的布局
+2.创建一个GridSpaceItemDecoration，继承RecyclerView.ItemDecoration，用于定义RecyclerView的item之间的分割线样式
+
+
+
+
+知识点一：完成主页MainActivity的界面的推荐歌单的RecyclerView的布局
+
+第一步：在activity_main.xml定义推荐歌单的布局样式，实例：
+LinearLayout -> nav_bar -> ScrollView -> LinearLayout -> LinearLayout(View + TextView) 
+其中推荐歌单的布局就是：LinearLayout -> View + TextView         //View定义前面的一个红色小模块，TextView定义一段文字(推荐歌单) 
+
+第二步：在MainActivity定义控件实例对象，然后绑定控件，绑定操作在initView()方法中进行，实例：
+public class MainActivity extends BaseActivity {
+    private RecyclerView mRvGrid;
+    private MusicGridAdapter mGridAdapter;
+    private void initView () {
+        initNavBar(false, "慕课音乐", true);     //这是设置顶部导航栏的样式
+        mRvGrid = fd(R.id.rv_grid);
+        mRvGrid.setLayoutManager(new GridLayoutManager(this,3));
+                                                       //这里需要创建一个GridSpaceItemDecoration，继承RecyclerView.ItemDecoration，用于定义RecyclerView的item的分割线
+        mRvGrid.addItemDecoration(new GridSpaceItemDecoration(getResources().getDimensionPixelSize(R.dimen.albumMarginSize), mRvGrid));
+        mRvGrid.setNestedScrollingEnabled(false);
+        mGridAdapter = new MusicGridAdapter(this, mMusicSourceModel.getAlbum());
+        mRvGrid.setAdapter(mGridAdapter);       //这里就需要创建一个RecyclerView的自定义的Adapter适配器了
+
+第三步：创建一个自定义的适配器MusicGridAdapter，实例：
+01.在MusicGridAdapter中：1.继承RecyclerView.Adapter，泛型是自定义的ViewHolder(后面会创建)
+然后实现父类的三个方法，实例：
+public class MusicGridAdapter extends RecyclerView.Adapter<MusicGridAdapter.ViewHolder> {}
+
+02.在MusicGridAdapter中：2.创建一个内部类ViewHolder(也就是自定义的ViewHolder)，用于绑定RecyclerView中的item的布局文件中的控件，实例：
+    class ViewHolder extends RecyclerView.ViewHolder{}
+
+03.在MusicGridAdapter中：3.创建一个构造函数，实例：
+    private Context mContext;
+    public MusicGridAdapter(Context context, List<AlbumModel> dataSource) {
+        mContext = context;}
+
+04.在MusicGridAdapter中：4.完成父类的三个方法onCreateViewHolder()、onBindViewHolder()、
+getItemCount()，实例：
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+        //item_grid_music.xml布局文件是RecyclerView的item的布局
+        return new ViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item_grid_music, viewGroup, false));}
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {}
+    @Override
+    public int getItemCount() { return 0;}
+
+第四步：实现RecyclerView的item的布局item_grid_music.xml，实例：
+LinearLayout -> FrameLayout' + TextView
+FrameLayout' -> WEqualsHImageView(自定义的正方形的ImageView，作为FrameLayout的背景) + LinearLayout'
+LinearLayout' -> ImageView + TextView
+
+第五步：创建自定义的正方形的ImageView，也就是WEqualsHImageView，只需要继承AppCompatImageView，
+然后重写父类的onMeasure()方法即可，实例：
+public class WEqualsHImageView extends AppCompatImageView {
+    public WEqualsHImageView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);        //父类的构造函数还是要重写的
+        @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
+//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        super.onMeasure(widthMeasureSpec, widthMeasureSpec);
+//        //获取View的宽度
+//        int width = MeasureSpec.getSize(widthMeasureSpec);
+//        //获取View模式
+//        //match_parent、wrap_content和dp
+//        int mode = MeasureSpec.getMode(widthMeasureSpec);}}
+
+
+
+
+
+知识点二：创建一个GridSpaceItemDecoration，继承RecyclerView.ItemDecoration，用于定义RecyclerView的item之间的分割线样式
+
+第一步：在GridSpaceItemDecoration中：1.覆写父类RecyclerView.ItemDecoration的getItemOffsets()方法，用于定义ItemCount在Item中的偏移量，
+也就是RecyclerView的ItemCount之间的间隔，实例：
+public class GridSpaceItemDecoration extends RecyclerView.ItemDecoration {
+    private int mSpace;        //mSpace是用户传进来的ItemCount(Item里面的内容)的偏移量，我们传进来是4dp，也就是分割线是4dp宽，ItemCount在Item里面偏移了4dp，ItemCount之间的分割距离就是4dp
+    @Override
+    //其中outRect是Item的矩形边界(ItemCount和Item边界之间的距离)，view是ItemView
+    public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        super.getItemOffsets(outRect, view, parent, state);
+        outRect.left = mSpace;      //outRect.left是ItemCount距离Item左边界的长度，把这个长度放到GridSpaceItemDecoration的构造函数中去，让用户自己传进来
+        //判断Item是不是第一个Item，如果是第一个Item，就不进行偏移
+//        if(parent.getChildLayoutPosition(view) % 3 == 0) {
+//            outRect.left = 0;}}            //使用这样的方法使第一个ItemCount不发生偏移，但是会使得第一个ItemCount的长宽都是100dp，后面的ItemCount发生偏移之后长宽都变为了90dp
+
+第二步：在GridSpaceItemDecoration中：2.创建构造函数，需要传入的参数是Item的矩形边界(也就是ItemCount的偏移量)
+    public GridSpaceItemDecoration(int space, RecyclerView parent){
+        mSpace = space;
+        getRecyclerViewOffsets(parent);}    //构造函数里面直接调用getItemOffsets()方法，让RecyclerView中的ItemCount发生偏移
+
+第三步：在GridSpaceItemDecoration中：3.创建getRecyclerViewOffsets()方法，作用是利用View中的margin属性，让View超出边界一个距离，
+从而让RecyclerView中的ItemCount之间产生分割距离，实例：
+    private void getRecyclerViewOffsets(RecyclerView parent){
+        //View中的margin属性
+        //margin为负值，View会超出边界一个距离
+        //margin为正值，View会距离边界一个距离
+        //利用margin的设置，使第一个Item来达到合适的偏移
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) parent.getLayoutParams();    //获取RecyclerView中的所有Item中的线性布局(也就是我们的ItemCount：每一个Item中的内容)
+        layoutParams.leftMargin = -mSpace;       //这里就是我们的ItemCount距离Item边界所产生的位移长度，margin数值为负值，说明是超出边界
+        parent.setLayoutParams(layoutParams);}
