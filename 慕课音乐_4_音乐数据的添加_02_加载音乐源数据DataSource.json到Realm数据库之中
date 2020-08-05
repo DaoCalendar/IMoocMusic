@@ -1,0 +1,149 @@
+
+总和：这部分是加载音乐源数据DataSource.json到Realm数据库之中
+1.创建一个音乐资源读取的工具类DataUtils，里面定义读取音乐资源的相关方法
+2.完善RealmHelp中关于音乐源数据存放和删除的相关逻辑，在用户登录的时候，完成音乐数据源的保存操作，
+在logout()方法中，在用户退出登录的时候完成音乐源数据的删除操作
+3.在RealmHelp中定义数据库迁移的方法migration()，Realm数据库发生结构性变化时(数据库中的模型或者模型字段发生变化)，我们就需要对数据进行迁移
+4.创建一个数据迁移的实现类Migration，实现RealmMigration接口
+
+
+知识点一：创建一个音乐资源读取的工具类DataUtils，里面定义读取音乐资源的相关方法
+
+第一步：在DataUtils中常见读取资源文件中的音乐数据的方法getJsonFromAssets()，实例：
+public class DataUtils {
+    //读取资源文件中的数据
+    public static String getJsonFromAssets (Context context, String fileName) {
+        /**
+         * 1.利用StringBuilder存放读取出来的数据
+         * 2.AssetManager资源管理器，Open方法打开指定的资源文件，返回InputStream的输入流
+         * 3.InputStreamReader(字节到字符的桥接器)，BufferReader(存放读取字符的缓冲区）
+         * 4.循环利用BufferReader的readLine方法读取每一行的数据
+         *       并且把读取出来的数据放到StringBuilder之中
+         * 5.返回读取出来的所有数据
+         */
+        //StringBuilder存放读取出来的数据
+        StringBuilder stringBuilder = new StringBuilder();
+        //AssetManager资源管理器
+        AssetManager assetManager = context.getAssets();
+        //Open方法打开指定的资源文件，返回InputStream输入流
+        try {
+            InputStream inputStream = assetManager.open(fileName);
+            //InputStreamReader是字节到字符的桥接器，BufferedReader是存放读取字符的缓冲区
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            //循环利用BufferReader的readLine方法读取每一行的数据
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line);}
+        } catch (IOException e) {
+            e.printStackTrace();}
+        return stringBuilder.toString();}}
+
+
+
+
+
+
+知识点二：完善RealmHelp中关于音乐源数据存放和删除的相关逻辑
+
+第一步：在RealmHelp中：1.定义保存音乐源数据的方法setMusicSource()，实例：
+    //保存音乐源数据
+    public void setMusicSource (Context context) {      //这是保存音乐源数据到数据库之中
+        //拿到资源文件中的数据
+        String musicSourceJson = DataUtils.getJsonFromAssets(context, "DataSource.json"); 
+        mRealm.beginTransaction();
+        mRealm.createObjectFromJson(MusicSourceModel.class, musicSourceJson);
+        mRealm.commitTransaction();}         //只有进行数据迁移migration()，才能将DataSource.json音乐源文件中的所有数据模型添加到Realm数据库中
+
+第二步：在RealmHelp中：2.定义删除音乐源数据的方法removeMusicSource()，实例：
+    public void removeMusicSource () {
+        mRealm.beginTransaction();
+        mRealm.delete(MusicSourceModel.class);
+        mRealm.delete(MusicModel.class);
+        mRealm.delete(AlbumModel.class);    //需要删除数据源中的所有数据模型中的数据
+        mRealm.commitTransaction();}
+
+第三步：在UserUtils中的validateLogin()方法中，也就是在用户登录的时候，完成音乐数据源的保存操作，
+在logout()方法中，在用户退出登录的时候完成音乐源数据的删除操作，实例：
+public class UserUtils {
+    public static boolean validateLogin(Context context, String phone, String password) {
+        ...
+        //用户验证完成之后，保存音乐源数据
+        realmHelp.setMusicSource(context);
+        return true;}
+
+    public static void logout (Context context) {
+        ...
+        //删除数据源
+        RealmHelp realmHelp = new RealmHelp();
+        realmHelp.removeMusicSource();
+        realmHelp.close();
+        ...}
+
+
+
+
+
+
+知识点三：在RealmHelp中定义数据库迁移的方法migration()，Realm数据库发生结构性变化时(数据库中的模型或者模型字段发生变化)，我们就需要对数据进行迁移
+
+第一步：在RealmHelp中创建一个获取RealmConfiguration的方法getRealmConf()，实例：
+    private static RealmConfiguration getRealmConf () {
+        return new RealmConfiguration.Builder()
+                .schemaVersion(1)
+                .migration(new Migration())          //这里需要创建一个数据迁移的实现类Migration
+                .build();}
+
+第二步：在RealmHelp中创建一个数据库迁移的方法migration()，实例：
+    //告诉Realm数据库，数据需要迁移，并且需要为Realm设置新的配置
+    public static void migration() {
+        //获取Realm的最新配置RealmConfiguration
+        RealmConfiguration conf = getRealmConf();
+        //为Realm设置最新的配置
+        Realm.setDefaultConfiguration(conf);
+        //告诉Realm数据库，数据需要迁移了
+        try {
+            Realm.migrateRealm(conf);      //数据迁移
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();}}
+
+第三步：在应用程序被打开的时候就需要进行数据迁移，在MyApplication中进行数据迁移，实例：
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Utils.init(this);
+        Realm.init(this);
+        RealmHelp.migration();}}    //进行数据迁移
+
+
+
+
+
+
+知识点四：创建一个数据迁移的实现类Migration，实现RealmMigration接口
+
+第一步：在Migration中：1.实现接口RealmMigration中的方法migrate()，实例：
+public class Migration implements RealmMigration {
+    @Override
+    public void migrate(DynamicRealm realm, long oldVersion, long newVersion) {
+        RealmSchema schema = realm.getSchema();
+        //第一次迁移
+        if (oldVersion == 0) {
+            schema.create("MusicModel")
+                    .addField("musicId", String.class)      //往数据库中添加数据模型和数据模型的字段
+                    .addField("name", String.class)
+                    .addField("poster", String.class)
+                    .addField("path", String.class)
+                    .addField("author", String.class);
+            schema.create("AlbumModel")
+                    .addField("albumId", String.class)
+                    .addField("name", String.class)
+                    .addField("poster", String.class)
+                    .addField("playNum", String.class)
+                    .addRealmListField("list", schema.get("MusicModel"));
+            schema.create("MusicSourceModel")
+                    .addRealmListField("album", schema.get("AlbumModel"))
+                    .addRealmListField("hot", schema.get("MusicModel"));
+            oldVersion = newVersion;}}}
+
