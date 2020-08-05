@@ -1,0 +1,170 @@
+
+总结：完善RealmHelp中的在Realm数据库中查询音乐源数据的方法
+1.在RealmHelp中创建获取音乐源数据的方法getMusicSource()，创建获取歌单的方法getAlbum()，创建获取单条音乐数据的方法getMusic()
+2.在AlbumListActivity音乐歌单界面中添加音乐源数据
+3.完善PlayMusicActivity中的音乐播放逻辑，就是在PlayMusicActivity中添加音乐源数据
+
+
+
+
+知识点一：在RealmHelp中创建获取音乐源数据的方法getMusicSource()，创建获取歌单的方法getAlbum()，
+创建获取单条音乐数据的方法getMusic()
+
+第一步：在RealmHelp中创建getMusicSource()方法，实例：
+    //返回音乐源数据
+    public MusicSourceModel getMusicSource () {
+        return mRealm.where(MusicSourceModel.class).findFirst();}
+
+第二步：在RealmHelp中创建getAlbum()方法，实例：
+    //返回歌单
+    public AlbumModel getAlbum (String albumId) {
+        return mRealm.where(AlbumModel.class).equalTo("albumId", albumId).findFirst();}
+
+第三步：在RealmHelp中创建getMusic()方法，实例：
+    //返回音乐
+    public MusicModel getMusic (String musicId) {
+        return mRealm.where(MusicModel.class).equalTo("musicId", musicId).findFirst();}
+
+第四步：在MainActivity中的initData()方法中使用RealmHelp.getMusicSource()方法，拿到音乐源数据，实例：
+public class MainActivity extends BaseActivity {
+    ...
+    private RealmHelp mRealmHelp;
+    private MusicSourceModel mMusicSourceModel;
+    private void initData () {        //还需要将initData()方法放到onCreate()方法之中
+        mRealmHelp = new RealmHelp();
+        mMusicSourceModel = mRealmHelp.getMusicSource();}
+
+第五步：在MusicGridAdapter中添加显示音乐源数据的逻辑
+public class MusicGridAdapter extends RecyclerView.Adapter<MusicGridAdapter.ViewHolder> {
+    private Context mContext;
+    private List<AlbumModel> mDataSource;     //音乐歌单列表， mDataSource就是MusicGridAdapter中的数据了
+    public MusicGridAdapter(Context context, List<AlbumModel> dataSource) {
+        mContext = context;
+        this.mDataSource = dataSource;}
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        final AlbumModel albumModel = mDataSource.get(i);
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        final AlbumModel albumModel = mDataSource.get(i);
+        Glide.with(mContext)
+                .load(albumModel.getPoster())
+                .into(viewHolder.ivIcon);
+        viewHolder.mTvPlayNum.setText(albumModel.getPlayNum());     //从AlbumModel中拿数据
+        viewHolder.mTvName.setText(albumModel.getName());
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, AlbumListActivity.class);      //当点击AlbumModel时，会将对应的ALBUM_ID传递给AlbumListActivity
+                intent.putExtra(AlbumListActivity.ALBUM_ID, albumModel.getAlbumId());  //这里需要在AlbumListActivity中定义一个常量ALBUM_ID
+                mContext.startActivity(intent);}});}
+
+    @Override
+    public int getItemCount() {
+        return mDataSource.size();}
+
+第六步：在MainActivity中创建销毁音乐源数据的方法onDestroy()，实例：
+    @Override
+    protected void onDestroy () {
+        super.onDestroy();
+        mRealmHelp.close();}    //在Activity被销毁的时候，我们去关闭RealmHelp数据库
+
+
+
+
+
+
+知识点二：在AlbumListActivity音乐歌单界面中添加音乐源数据
+
+第一步：在AlbumListActivity中拿到MusicGridAdapter传递过来的ALBUM_ID，然后拿到对应的AlbumModel，取出音乐歌单模型里面的数据，实例：
+public class AlbumListActivity extends BaseActivity {
+    public static final String ALBUM_ID = "albumId";
+    private String mAlbumId;
+    private RealmHelp mRealmHelp;
+    private AlbumModel mAlbumModel; 
+    private void initData() {         //在onCreate()方法中需要添加initData()方法，这部分和MainActivity中的逻辑的格式是一样的
+        mAlbumId = getIntent().getStringExtra("ALBUM_ID");
+        mRealmHelp = new RealmHelp();
+        mAlbumModel = mRealmHelp.getAlbum(mAlbumId);}      //拿到ALBUM_ID对应的AlbumModel
+
+    private void initView(){     //把AlbumModel中的MusicModel的数据传递给MusicListAdapter，让它显示在RecyclerView之中
+        ...
+        mAdapter = new MusicListAdapter(this, null, mAlbumModel.getList());
+        mRvList.setAdapter(mAdapter);}
+
+    @Override
+    protected void onDestroy() {        //和MainActivity中一样需要在关闭页面时关闭数据库
+        super.onDestroy();
+        mRealmHelp.close();}
+
+第二步：在MusicListAdapter(AlbumListActivity中使用的RecyclerView的适配器)中显示AlbumListActivity传递过来的AlbumModel中的数据(AlbumModel是MusicModel的数组集合)
+public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.ViewHolder> {
+    private Context mContext;
+    private List<MusicModel> mDataSource;
+    private RecyclerView mRv;
+
+    public MusicListAdapter(Context context, RecyclerView recyclerView, List<MusicModel> dataSource){
+        mContext = context;
+        mRv = recyclerView;
+        this.mDataSource = dataSource;}     //拿到RecyclerView中的数据资源
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        setRecyclerViewHeight();
+        final MusicModel musicModel = mDataSource.get(i);
+        Glide.with(mContext)
+                .load(musicModel.getPoster())
+                .into(viewHolder.ivIcon);
+        viewHolder.tvName.setText(musicModel.getName());   //从MusicModel中拿数据
+        viewHolder.tvAuthor.setText(musicModel.getAuthor());
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, PlayMusicActivity.class);
+                intent.putExtra(PlayMusicActivity.MUSIC_ID, musicModel.getMusicId());   //这里需要在PlayMusicActivity中定义一个常量MUSIC_ID
+                mContext.startActivity(intent);}});}
+
+    @Override
+    public int getItemCount() {
+        return mDataSource.size();}
+
+第三步：在PlayMusicActivity中定义一个音乐数据Id的常量MUSIC_ID，
+public class PlayMusicActivity extends BaseActivity {
+    public static final String MUSIC_ID = "musicId"; }   //这个常量就是从MusicListAdapter那里接收到的音乐数据的Id
+
+
+
+
+
+
+知识点三：完善PlayMusicActivity中的音乐播放逻辑，就是在PlayMusicActivity中添加音乐源数据
+
+第一步：在PlayMusicActivity中的initData()方法中拿到音乐数据的Id对应的音乐数据
+public class PlayMusicActivity extends BaseActivity {
+    public static final String MUSIC_ID = "musicId";
+    private String mMusicId;
+    private RealmHelp mRealmHelp;
+    private MusicModel mMusicModel;
+    private void initData () {
+        mMusicId = getIntent().getStringExtra(MUSIC_ID);
+        mRealmHelp = new RealmHelp();
+        mMusicModel = mRealmHelp.getMusic(mMusicId);}
+
+第二步：在PlayMusicActivity中的initView()方法中完善音乐播放的逻辑，实例：
+    private void initView () throws IOException {
+        mIvBg = fd(R.id.iv_bg);
+        mTvName = fd(R.id.tv_name);
+        mTvAuthor = fd(R.id.tv_author);
+
+        Glide.with(this)
+                .load(mMusicModel.getPoster())    //从获取到的MusicModel中拿数据
+                .apply(RequestOptions.bitmapTransform(new BlurTransformation(25, 10)))
+                .into(mIvBg);
+        mTvName.setText(mMusicModel.getName());
+        mTvAuthor.setText(mMusicModel.getAuthor());
+
+        mPlayMusicView = fd(R.id.play_music_view);
+        mPlayMusicView.setMusic(mMusicModel);
+        mPlayMusicView.playMusic();}
