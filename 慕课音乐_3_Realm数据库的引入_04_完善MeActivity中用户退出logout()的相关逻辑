@@ -1,0 +1,50 @@
+
+总结：这部分是完善MeActivity中用户退出logout()的相关逻辑，在用户退出登录的时候需要删除掉SharedPreferences保存的用户登录标记，返回到登录页面
+1.完善MeActivity中用户退出logout()的相关逻辑
+2.完善UserUtils中的退出登录的方法logout()
+3.在SPUtils中定义删除用户标记(SharedPreferences)的相关逻辑
+
+
+
+知识点一：完善MeActivity中用户退出logout()的相关逻辑
+
+第一步：完善MeActivity中的退出按钮的点击事件，实例：
+    //出登录点击事件
+    public void onLogoutClick (View v) {
+        UserUtils.logout(this);}
+
+
+
+
+
+知识点二：完善UserUtils中的退出登录的方法logout()
+
+第一步：在UserUtils中的logout()方法中定义删除SharedPreferences里面保存的用户标记的相关逻辑，实例：
+    //退出登录
+    public static void logout (Context context) {
+        //删除SharedPreferences里面保存的用户标记
+        boolean isRemove = SPUtils.removeUser(context);
+        if (!isRemove) {
+            Toast.makeText(context, "系统错误，请稍后重试", Toast.LENGTH_SHORT).show();
+            return;}
+        Intent intent = new Intent(context, LoginActivity.class);
+        //添加intent标识符，清理Task栈并且新生成一个Task栈
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+        //因为之前清理了Task栈，导致Activity跳转的动画发生异常(Activity跳转动画是通过Task栈中Activity的插入和弹出进行的)，所以这里需要重新定义Activity跳转动画
+        ((Activity)context).overridePendingTransition(R.anim.open_enter, R.anim.open_exit);}
+
+
+
+
+
+知识点三：在SPUtils中定义删除用户标记(SharedPreferences)的相关逻辑
+
+第一步：在SPUtils中创建一个删除用户标记(SharedPreferences)的方法removeUser()，实例：
+    //删除用户标记
+    public static boolean removeUser (Context context) {
+        SharedPreferences sp = context.getSharedPreferences(SPConstants.SP_NAME_USER, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.remove(SPConstants.SP_KEY_PHONE);
+        boolean result = editor.commit();
+        return result;}
