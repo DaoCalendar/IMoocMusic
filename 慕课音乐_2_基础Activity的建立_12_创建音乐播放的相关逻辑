@@ -1,0 +1,139 @@
+
+总结：这部分是创建音乐播放的相关逻辑
+1.创建一个音乐播放的工具类MediaPlayerHelp，在MediaPlayerHelp中，定义这个工具类是一个单例模式
+2.完善音乐播放的工具类MediaPlayerHelp，在里面定义：1.setPath()方法，获取当前播放的音乐的播放地址，2.start()方法，用于启动音乐的播放，3.pause()方法，用于暂停音乐的播放
+3.在PlayMusicView中的init()方法中获取MediaPlayerHelp的单例，然后在playMusic()方法中定义使用MediaPlayerHelp播放音乐的逻辑
+4.在PlayMusicActivity的initView()方法中的传入一个网络音乐的播放路径，让音乐播放起来
+完整的音乐播放逻辑是：PlayMusicActivity中的initView()方法中调用PlayMusicView的playMusic()方法 -> 在PlayMusicView的playMusic()方法中调用MediaPlayerHelp的start()方法
+-> 在MediaPlayerHelp的start()方法中调用MediaPlayer的start()方法
+
+
+知识点一：创建一个音乐播放的工具类MediaPlayerHelp
+
+第一步：在MediaPlayerHelp中：1.定义这个工具类是一个单例模式，实例：
+public class MediaPlayerHelp {
+    private static MediaPlayerHelp instance;
+    private Context mContext;
+    public static MediaPlayerHelp getInstance(Context context) {         //获取MediaPlayerHelp单例的方法，这是一个懒汉模式
+        if (instance == null) {
+            synchronized (MediaPlayerHelp.class){
+                if (instance == null) {
+                    instance = new MediaPlayerHelp(context);}}}
+        return instance;}
+
+
+第二步：在MediaPlayerHelp中：2.创建一个构造方法，将上下文Context和实例：
+    private Context mContext;
+    private MediaPlayer mMediaPlayer;        //这是安卓提供的MediaPlayer对象
+    private MediaPlayerHelp(Context context) { 
+        mContext = context;
+        mMediaPlayer = new MediaPlayer();}      //在构造方法中拿到MediaPlayer对象
+
+
+
+
+
+
+知识点二：完善音乐播放的工具类MediaPlayerHelp，在里面定义1.setPath()方法，获取当前播放的音乐的播放地址，
+2.start()方法，用于启动音乐的播放，3.pause()方法，用于暂停音乐的播放
+
+第一步：在MediaPlayerHelp中：1.定义setPath()方法，获取当前播放的音乐的播放地址，实例：
+    private String mPath;
+    public void setPath(String path) throws IOException {
+
+        /**
+         * 1.音乐正在播放或者切换了音乐，重置播放状态
+         * 2.设置音乐播放路径
+         * 3.准备播放
+         */
+
+        //1.当音乐切换的时候，如果音乐处于播放状态，那么我们就去重置音乐的播放状态
+        //2.如果音乐没有处于播放状态（暂停），那么就不去重置音乐的播放状态
+        //1.音乐正在播放或者切换了音乐，重置播放状态
+        if (mMediaPlayer.isPlaying() || !path.equals(mPath)) {
+            mMediaPlayer.reset();}          //重置音乐播放状态
+        mPath = path;
+        //2.设置播放音乐的路径
+        try {
+            mMediaPlayer.setDataSource(mContext, Uri.parse(path));
+        } catch (IOException e) {
+            e.printStackTrace();}
+        //3.准备播放
+        mMediaPlayer.prepareAsync();    //异步加载
+        //这里是捕获异步加载完成后的一个通知
+        mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {   //new一个准备播放的监听器
+            @Override
+            public void onPrepared(MediaPlayer mp) {     //onPrepared()方法里面就是异步加载完成之后的相关逻辑
+                if (onMediaPlayerHelperListener != null) {       //监听器不为空
+                    onMediaPlayerHelperListener.onPrepared(mp);}}});}    //异步加载完成之后需要实现监听器onMediaPlayerHelperListener的相关逻辑onPrepared()方法
+
+第二步：在MediaPlayerHelp中：2.定义一个接口OnMediaPlayerHelperListener，里面是监听音乐播放的状态的方法，实例：
+    private OnMediaPlayerHelperListener onMediaPlayerHelperListener;    //下面是提供这个变量的Setter方法
+    public void setOnMediaPlayerHelperListener(OnMediaPlayerHelperListener onMediaPlayerHelperListener) {
+        this.onMediaPlayerHelperListener = onMediaPlayerHelperListener;}
+    public interface OnMediaPlayerHelperListener {
+        void onPrepared(MediaPlayer mp);        //监听器监听音乐异步加载完成，音乐异步加载完成之后的逻辑需要用户在子类(PlayMusicView)中自己去实现，这里在PlayMusicView中是开始播放音乐
+        void onCompletion (MediaPlayer mp);}   //监听音乐播放完成，这个逻辑需要用户在子类中自己去实现
+
+第三步：在MediaPlayerHelp中：3.定义播放音乐的方法start()，实例：
+    //开始播放音乐
+    public void start ()  {
+        if (mMediaPlayer.isPlaying())return;
+        mMediaPlayer.start();}
+
+第四步：在MediaPlayerHelp中：4.定义暂停播放音乐的方法pause()，实例：
+    //暂停播放
+    public void pause () {
+        mMediaPlayer.pause();}
+
+第五步：使用音乐播放的工具类MediaPlayerHelp来播放音乐，在PlayMusicView中的init()方法中获取MediaPlayerHelp的单例，
+然后在playMusic()方法中定义使用MediaPlayerHelp播放音乐的逻辑，实例：
+public class PlayMusicView extends FrameLayout {
+    private MediaPlayerHelp mMediaPlayerHelp;
+    private String mPath;
+    private void init(Context context) {
+        ...
+        mMediaPlayerHelp = MediaPlayerHelp.getInstance(mContext);}
+    public void playMusic(String path){
+            mPath = path;     //这里将音乐的路径保存起来
+            ...
+            //判断当前播放的音乐是否是已经在播放的音乐
+            //1.如果是已经在播放的音乐，就直接调用MediaPlayerHelp中的start()方法
+            //2.如果不是已经在播放的音乐，需要先调用setPath()方法设置音乐的路径，然后再start()
+            if (mMediaPlayerHelp.getPath() != null && mMediaPlayerHelp.getPath() equals(path)){
+                mMediaPlayerHelp.start();
+            }else{
+                mMediaPlayerHelp.setPath(path);
+                mMediaPlayerHelp.setOnMediaPlayerHelperListener(new MediaPlayerHelp.OnMediaPlayerHelperListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {     //在监听器的onPrepared()方法中完成音乐的播放
+                        mMediaPlayerHelp.start();}});}
+
+第六步：在PlayMusicView中将音乐的路径放到切换播放状态的trigger()方法中的播放音乐的方法playMusic()方法中，
+同时在stopMusic()方法中调用MediaPlayerHelp的pause()方法将音乐暂停掉，实例：
+    private void trigger() throws IOException {
+        if (isPlaying) {
+            stopMusic();
+        } else {
+            playMusic(mPath);}}
+    //停止播放音乐
+    public void stopMusic () {
+        ...
+        mMediaPlayerHelp.pause();}
+
+第七步：在PlayMusicActivity的initView()方法中的传入一个网络音乐的播放路径，让音乐播放起来，实例：
+    private void initView(){
+        mPlayMusicView.playMusic("音乐的网络路径");}
+
+
+
+
+
+
+知识点三：完善音乐播放的工具类MediaPlayerHelp
+
+第一步：在MediaPlayerHelp中定义一个获取音乐路径的方法getPath()，实例：
+public class MediaPlayerHelp {
+    //返回正在播放的音乐路径
+    public String getPath () {
+        return mPath;}
