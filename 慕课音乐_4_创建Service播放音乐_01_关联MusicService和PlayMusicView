@@ -1,0 +1,136 @@
+
+总结：这部分是创建一个MusicService，并且关联MusicService和PlayMusicView，将PlayMusicView中播放音乐和停止音乐的逻辑全部放到MusicService之中
+1.创建一个MusicService，作为音乐播放的服务，通过Service进行音乐播放，Service运行时播放音乐，Service被杀死时停止播放
+2.完善PlayMusicView，在里面添加启动MusicService和停止音乐播放(不是停止MusicService)的逻辑
+
+
+
+
+知识点一：创建一个MusicService，作为音乐播放的服务，通过Service进行音乐播放，Service运行时播放音乐，Service被杀死时停止播放
+
+第一步：MusicService的作用是连接PlayMusicView和MediaPlayHelper，实例：
+1.通过Service连接 PlayMusicView 和 MediaPlayHelper
+2.PlayerMusicView -- Service
+        1.播放音乐和暂停音乐
+        2.控制启动Service和绑定Service，解除绑定Service
+3.MediaPlayHelper -- Service
+        1.播放音乐和暂停音乐
+        2.监听音乐播放完成的回调方法，停止Service
+
+第二步：在MusicService中：1.创建一个MediaPlayerHelp的单例实例，并在onCreate()方法中初始化这个单例，实例：
+public class MusicService extends Service {
+    private MediaPlayerHelp mMediaPlayerHelp;
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mMediaPlayerHelp = MediaPlayerHelp.getInstance(this);}
+
+第三步：在MusicService中：2.创建一个内部类MusicBind，继承Binder，在里面实现三个方法：
+设置音乐(MusicModel)的方法，播放音乐的方法(将之前在PlayMusicView中的播放音乐的逻辑放到这里)，暂停播放音乐的方法
+01.设置音乐的方法setMusic()，实例：
+    private MusicModel mMusicModel;
+public class MusicBind extends Binder {
+        //设置音乐（MusicModel）
+        public void setMusic(MusicModel musicModel) {
+            mMusicModel = musicModel;}
+
+02.播放音乐的方法playMusic()，实例：
+        //播放音乐
+        public void playMusic() {
+            //1.判断当前播放的音乐是否是已经在播放的音乐
+            //2.如果当前音乐是正在播放的音乐，就直接执行start方法
+            //3.如果当前音乐不是需要播放的音乐，就调用setPath方法
+            if (mMediaPlayerHelp.getPath() != null && mMediaPlayerHelp.getPath().equals(mMusicModel.getPath())) {
+                mMediaPlayerHelp.start(); 
+            }else{
+                try {
+                    mMediaPlayerHelp.setPath(mMusicModel.getPath());
+                } catch (IOException e) {
+                    e.printStackTrace();}
+                mMediaPlayerHelp.setOnMediaPlayerHelperListener(new MediaPlayerHelp.OnMediaPlayerHelperListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        mMediaPlayerHelp.start();}       //这里都是之前PlayMusicView中的播放音乐的逻辑
+                    @Override
+                    public void omCompletion(MediaPlayer mp) {
+                        stopSelf();}});}}     //停止掉自己这个Service，也就停止了音乐播放
+
+03.暂停播放音乐的方法stopMusic()，实例：
+        //暂停播放
+        public void stopMusic () {
+            mMediaPlayerHelp.pause();}
+
+第四步：在MusicService中：3.在onBind()方法中直接返回一个MusicBind的实例对象，实例：
+    @Override
+    public IBinder onBind(Intent intent) {
+        return new MusicBind();}
+
+
+
+
+
+知识点二：完善PlayMusicView，在里面添加启动MusicService和停止音乐播放(不是停止MusicService)的逻辑
+
+第一步：在PlayMusicView中：1.创建启动MusicService的方法startMusicService()，实例：
+    private Intent mServiceIntent;
+    private MusicService.MusicBind mMusicBind;
+    private boolean isPlaying, isBindService;
+    //启动音乐服务
+    private void startMusicService () {              //Service服务的启动逻辑还要重温一下
+        //启动Service
+        if (mServiceIntent == null) {
+            mServiceIntent = new Intent(mContext, MusicService.class);
+            mContext.startService(mServiceIntent);
+        }else {
+            mMusicBind.playMusic();}      //这种情况是暂停音乐后重新点击播放的时候，mServiceIntent不为空，此时直接播放音乐
+        //绑定Service，首先判断当前Service未绑定
+        if (!isBindService) {
+            isBindService = true;
+            mContext.bindService(mServiceIntent, conn, Context.BIND_AUTO_CREATE);}}
+
+第二步：在PlayMusicView中：2.创建一个ServiceConnection()的实例对象，实例：
+    ServiceConnection conn = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mMusicBind = (MusicService.MusicBind) service;
+            mMusicBind.setMusic(mMusicModel);    //设置我们要播放的MusicModel
+            mMusicBind.playMusic();}
+        @Override
+        public void onServiceDisconnected(ComponentName name) {}};
+
+第三步：在PlayMusicView中：3.创建解除MusicService绑定的方法destory()，实例：
+    //解除绑定
+    public void destory () {
+        //如果已经绑定了服务，解除绑定
+        if (isBindService) {
+            isBindService = false;
+            mContext.unbindService(conn);}}
+
+第三步：在PlayMusicView中的playMusic()方法中启动MusicService，在stopMusic()方法中停止音乐的播放，实例：
+    //播放音乐
+    public void playMusic() throws IOException {
+        ...
+        startMusicService();}
+    //停止播放音乐
+    public void stopMusic () {
+        ...
+        if (mMusicBind != null)
+             mMusicBind.stopMusic();}
+
+第四步：在PlayMusicView中创建一个初始化MusicModel的方法setMusic()，实例：
+    private MusicModel mMusicModel;
+    public void setMusic(MusicModel music) {
+        mMusicModel = music;
+        setMusicIcon();}
+    public void setMusicIcon (){
+        Glide.with(mContext)
+                 .load(mMusicModel.getPoster())
+                 .into(mIvIcon);}
+
+第五步：在PlayMusicActivity的initView()方法中拿到我们的MusicModel，实例：
+public class PlayMusicActivity extends BaseActivity {
+    private void initView ()
+        mPlayMusicView = fd(R.id.play_music_view);
+//        mPlayMusicView.setMusicIcon(mMusicModel.getPoster());
+        mPlayMusicView.setMusic(mMusicModel);      //拿到我们的MusicModel，然后传递给PlayMusicView，然后传递给MusicService
+        mPlayMusicView.playMusic();}
