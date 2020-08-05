@@ -1,0 +1,137 @@
+
+总结：这部分是完善注册界面RegisterActivity中的注册信息到Realm数据库的逻辑
+1.在项目中引入Realm数据库框架
+2.创建一个RealmHelp，用于定义Realm数据库操作的一些方法(CRUD)，这里就定义了saveUser()方法、close()方法和getAllUser()方法
+3.创建一个用户的数据模型UserModel，用于定义用户User相关的变量参数
+4.在UserUtils中创建一个registerUser()方法、saveUser()方法和userExistFromPhone()方法
+5.完善RegisterActivity中的注册功能，实现注册按钮的点击事件
+
+
+
+知识点一：在项目中引入Realm数据库框架
+
+第一步：在github中引入Realm数据库框架(Realm相当于SqLite，都是移动端的数据库框架)
+
+第二步：在MyApplication中初始化我们的Realm框架，实例：
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Utils.init(this);
+        Realm.init(this);}}     //Realm的初始化
+
+
+
+
+
+
+知识点二：创建一个数据库工具类RealmHelp，用于定义Realm数据库操作的一些方法(CRUD)
+
+第一步：在RealmHelp中：1.创建构造方法，在里面初始化一个Realm的实例对象，实例：
+public class RealmHelp {
+    private Realm mRealm;
+    public RealmHelp () {
+        mRealm = Realm.getDefaultInstance();}
+
+
+
+
+
+
+知识点三：创建一个用户的数据模型UserModel，用于定义用户User相关的变量参数
+
+第一步：在UserModel中：1.定义User用户相关的变量参数(phone、password等)，实例
+public class UserModel extends RealmObject {
+    @PrimaryKey
+    private String phone;          //phone列就是UserModel这张表的主键
+    @Required
+    private String password;
+    ...}      //所有变量参数的Setter和Getter方法
+
+
+
+
+
+
+知识点四：完善RegisterActivity中的注册功能
+
+第一步：在RegisterActivity中：1.实现注册按钮的点击事件，实例：
+    private InputView mInputPhone, mInputPassword, mInputPasswordConfirm;    //定义三个输入框的对象
+    //注册按钮点击事件
+    public void onRegisterClick (View v) {       //点击事件传入的参数就是一个View(界面的根布局)，用于获取用户在View上输入的内容
+        String phone = mInputPhone.getInputStr();
+        String password = mInputPassword.getInputStr();
+        String passwordConfirm = mInputPasswordConfirm.getInputStr();    //首先拿到用户输入的内容
+        //这里是获取用户注册的结果，并判断结果是否正确
+        boolean result = UserUtils.registerUser(this, phone, password, passwordConfirm);     //将用户输入的内容的合法性验证的逻辑放到UserUtils之中
+        if (!result) return;        //注册失败，还是会留在注册界面
+        //后退页面
+        onBackPressed();}       //注册成功，才会后退到登录页面中
+
+第二步：在UserUtils中创建一个registerUser()方法，里面是用户进行注册的相关逻辑，主要分为两个部分：
+1.用户输入的合法性验证，2.在Realm数据库中保存用户输入的手机号码(需要MD5加密)，实例：
+    //注册用户
+    public static boolean registerUser (Context context, String phone, String password, String passwordConfirm) {
+        if (!RegexUtils.isMobileExact(phone)) {
+            Toast.makeText(context, "无效的手机号", Toast.LENGTH_SHORT).show();
+            return false;}       //返回的是一个false，直接就是registerUser()方法的返回值了
+        if (StringUtils.isEmpty(password) || !password.equals(passwordConfirm)){
+            Toast.makeText(context, "请确认密码", Toast.LENGTH_SHORT).show();
+            return false;}
+        //验证用户输入的手机号是否已经被注册
+        //1.根据Realm获取当前用户已经注册的所有用户
+        //2.根据用户输入的手机号匹配查询的所有用户，如果可以匹配，则用户就是已经注册过的
+        if (UserUtils.userExistFromPhone(phone)){     //这里需要创建一个userExistFromPhone()方法，用于验证用户输入的信息是否已经注册过了
+            Toast.makeText(context, "该手机号已存在", Toast.LENGTH_SHORT).show();
+            return false;}
+
+        UserModel userModel = new UserModel();     //这里就是在Realm数据库中保存用户注册的信息
+        userModel.setPhone(phone);
+        userModel.setPassword(EncryptUtils.encryptMD5ToString(password));
+        saveUser(userModel);      //这里创建一个saveUser()方法，用于在Realm数据库中保存UserModel
+        return true;}     //注册成功返回的是true
+
+第三步：在UserUtils中创建一个saveUser()方法，用于在Realm数据库中保存UserModel，实例：
+    //保存用户到数据库
+    public static void saveUser (UserModel userModel) {
+        RealmHelp realmHelp = new RealmHelp();
+        realmHelp.saveUser(userModel);     //这里需要在RealmHelp中创建一个saveUser()方法，用于在Realm数据库中保存用户信息
+        realmHelp.close();}     //这里需要在RealmHelp中创建一个close()方法，用于关闭Realm数据库
+
+第四步：在RealmHelp中创建一个saveUser()方法，用于在Realm数据库中保存用户信息
+public class RealmHelp {
+    private Realm mRealm;
+    //保存用户信息
+    public void saveUser (UserModel userModel) {
+        mRealm.beginTransaction();
+        mRealm.insert(userModel);
+//        mRealm.insertOrUpdate(userModel); 
+        mRealm.commitTransaction();}
+
+第五步：在RealmHelp中创建一个关闭数据库的方法close()，目的是释放内存，实例：
+    //关闭数据库
+    public void close () {
+        if (mRealm != null && !mRealm.isClosed()) {
+            mRealm.close();}}    //关闭Realm数据库对象
+
+第六步：在UserUtils中创建一个userExistFromPhone()方法，用于验证用户输入的信息是否已经注册过了，实例：
+    public static boolean userExistFromPhone (String phone) {
+        boolean result = false;      //定义一个flag，作为返回值(布尔类型的返回值)
+        RealmHelp realmHelp = new RealmHelp();
+        List<UserModel> allUser = realmHelp.getAllUser();     //这里需要创建一个根据用户输入的UserModel，获取所有的User信息的方法getAllUser()
+        for (UserModel userModel : allUser) {
+            if (userModel.getPhone().equals(phone)) {
+                //当前手机号已经存在于数据库之中了
+                result = true;
+                break;}}
+        realmHelp.close();
+        return result;}
+
+第七步：在RealmHelp中创建一个根据用户输入的UserModel，获取所有的User信息的方法getAllUser()，实例：
+public class RealmHelp {
+    //返回所有用户
+    public List<UserModel> getAllUser () {
+        RealmQuery<UserModel> query = mRealm.where(UserModel.class);
+        RealmResults<UserModel> results = query.findAll();    //results是User这个模型对象的引用
+        return results;}
+
