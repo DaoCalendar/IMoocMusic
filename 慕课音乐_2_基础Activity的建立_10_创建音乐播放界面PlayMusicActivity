@@ -1,0 +1,91 @@
+
+总结：这部分是创建音乐播放界面PlayMusicActivity，并实现里面的布局样式，创建一个自定义的PlayMusicView作为其主体的样式(光盘和指针)
+1.创建音乐播放界面的布局文件activity_play_music.xml
+2.创建音乐播放界面PlayMusicActivity，并使用glide-transformations框架设置音乐播放界面的背景(高斯模糊的背景)和音乐播放界面(圆形界面)
+3.创建一个自定义的PlayMusicView，用于在activity_play_music.xml布局文件中定义音乐播放界面中的光盘和指针的样式和逻辑，目前定义好了样式
+
+
+
+知识点一：创建音乐播放界面PlayMusicActivity
+
+第一步：创建音乐播放界面的布局文件activity_play_music.xml，里面有一个自定义的PlayMusicView，需要后面去实现
+
+第二步：在PlayMusicActivity中：1.在onCreate()方法中设置隐藏statusBar，实例：
+public class PlayMusicActivity extends BaseActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_play_music);
+        //隐藏statusBar
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);}
+
+第三步：在PlayMusicActivity中：2.实现布局文件中的后退按钮的点击事件，实例：
+    //后退按钮点击事件
+    public void onBackClick(View view){
+        onBackPressed();}
+
+第四步：在MusicListAdapter中添加RecyclerView中的ItemView的点击事件，点击之后直接进入到PlayMusicActivity的界面，实例：
+public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.ViewHolder> {
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, PlayMusicActivity.class);
+                intent.putExtra(PlayMusicActivity.MUSIC_ID, musicModel.getMusicId());
+                mContext.startActivity(intent);}});
+
+
+
+
+
+知识点二：完善PlayMusicActivity，使用glide-transformations框架设置音乐播放界面的背景(高斯模糊的背景)和音乐播放界面(圆形界面)
+
+第一步：在PlayMusicActivity中：1.在initView()方法中进行网络图片的加载，并利用glide-transformations框架配合Glide来处理图片，实例：
+public class PlayMusicActivity extends BaseActivity {
+    private ImageView mIvBg;
+    private void initView () throws IOException {
+        Glide.with(this)
+                .load(mMusicModel.getPoster())                                             
+                .apply(RequestOptions.bitmapTransform(new BlurTransformation(25, 10)))   //BlurTransformation的第一个参数是处理图片的模糊程度，第二个参数是压缩图片的比例
+                .into(mIvBg);               //使用Glide加载网络图片，这张图片是一张模糊处理的图片，作为音乐播放界面的背景图片
+
+第二步：在PlayMusicActivity中：2.在initView()方法中绑定自定义的PlayMusicView布局控件，
+    private PlayMusicView mPlayMusicView;
+    private void initView () throws IOException {
+        mPlayMusicView = fd(R.id.play_music_view);
+        mPlayMusicView.setMusicIcon(mMusicModel.getPoster());}
+
+
+
+知识点三：创建一个自定义的PlayMusicView，用于在activity_play_music.xml布局文件中定义音乐播放界面中的光盘和指针的样式和逻辑
+
+第一步：在PlayMusicView中：1.继承FrameLayout父类，实现其中的构造方法，实例
+public class PlayMusicView extends FrameLayout {
+    ...        //这里需要实现所有的构造函数
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public PlayMusicView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        init(context);}
+
+第二步：在PlayMusicView中：2.创建一个init()方法，
+    private Context mContext;
+    private View mView;
+    private void init(Context context) {
+        mContext = context;                          //mView就是自定义的布局
+        mView = LayoutInflater.from(mContext).inflate(R.layout.play_music, this, false);   //这里的play_music.xml文件是其对应的布局文件，里面定义的就是光盘和指针的样式
+        mIvIcon = mView.findViewById(R.id.iv_icon);
+        addView(mView);    //这里是使用FrameLayout的addView()方法将自定义的布局添加到根布局中
+
+第三步：创建play_music.xml布局文件，在里面定义音乐播放界面中的光盘和指针的样式，实例
+主体的布局：FrameLayout -> FrameLayout'(光盘) + ImageView(指针)       
+FrameLayout'(光盘) -> ImageView + CircleImageView + ImageView
+
+第四步：在PlayMusicView中：3.创建设置光盘中显示的音乐封面图片的方法setMusicIcon()，实例：
+        private ImageView mIvIcon;     //定义ImageView的控件实例对象之后，还需要在init()方法中绑定控件
+        //设置光盘中显示的音乐封面图片
+        public void setMusicIcon (String icon){        //icon是用户传进来的网络图片的地址
+            Glide.with(mContext)
+                    .load(icon)
+                    .into(mIvIcon);}
+
