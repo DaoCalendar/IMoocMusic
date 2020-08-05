@@ -1,0 +1,100 @@
+
+总结：这部分是创建音乐播放界面PlayMusicView中的光盘和指针的动画
+1.在PlayMusicView中定义音乐播放界面中的指针的动画，动画主要分为三个部分：1.光盘转动的动画2.指针指向光盘的动画，3.指针离开光盘的动画
+2.在PlayMusicView中的init()方法中初始化上面的三个属性动画
+3. 在PlayMusicActivity的initView()方法中添加启动音乐播放的逻辑
+
+
+
+知识点一：在PlayMusicView中定义音乐播放界面中的指针的动画，动画主要分为三个部分：1.光盘转动的动画
+2.指针指向光盘的动画，3.指针离开光盘的动画
+
+第一步：定义光盘转动的属性动画的xml文件，也就是play_music_anim.xml，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/linear_interpolator">      //设置动画的差值器，作用是指定动画的变化方式(可以是前快后慢，或者平滑执行)
+    <rotate             //旋转动画的标签
+        android:fromDegrees="0"
+        android:toDegrees="360"    //360度旋转
+        android:pivotX="50%"
+        android:pivotY="50%"         //围绕中心点进行旋转
+        android:duration="@integer/play_music_anim_duration"
+        android:repeatCount="infinite" />       //一直旋转
+</set>
+
+第二步：定义指针指向光盘的动画，也就是play_needle_anim.xml文件，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/linear_interpolator">    //线性差值器
+    <rotate
+        android:fromDegrees="-20"
+        android:toDegrees="0"    //从-20度转到0度
+        android:pivotX="0"
+        android:pivotY="0"    //旋转的中心点是界面的原点
+        android:duration="@integer/play_needle_anim_duration"/>
+</set>
+
+第三步：定义指针离开光盘的动画，也就是stop_needle_anim.xml文件，实例：
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/linear_interpolator"
+    android:fillAfter="true">    //设置了fillAfter属性之后，指针会停留在最后的位置上不发生改变
+    <rotate
+        android:fromDegrees="0"        //和指针指向光盘的动画相反
+        android:toDegrees="-20"
+        android:pivotX="0"
+        android:pivotY="0"
+        android:duration="@integer/play_needle_anim_duration"/>
+</set>
+
+第四步：在PlayMusicView中的init()方法中初始化上面的三个属性动画，实例：
+public class PlayMusicView extends FrameLayout {
+    private Animation mPlayMusicAnim, mPlayNeedleAnim, mStopNeedleAnim;       //三个属性动画
+    private void init(Context context) { 
+        mFlPlayMusic = mView.findViewById(R.id.fl_play_music);     //整个光盘界面的FrameLayout布局
+        mFlPlayMusic.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    trigger();     //光盘(光盘控件就是mFlPlayMusic)的点击事件
+                } catch (IOException e) {
+                    e.printStackTrace();}}});
+        mIvIcon = mView.findViewById(R.id.iv_icon);         //光盘图片(也就是处理后的圆形图片)
+        mIvNeedle = mView.findViewById(R.id.iv_needle);    //指针
+        mIvPlay = mView.findViewById(R.id.iv_play);     //显示音乐播放的图标
+        mPlayMusicAnim = AnimationUtils.loadAnimation(mContext, R.anim.play_music_anim);
+        mPlayNeedleAnim = AnimationUtils.loadAnimation(mContext, R.anim.play_needle_anim);
+        mStopNeedleAnim = AnimationUtils.loadAnimation(mContext, R.anim.stop_needle_anim);
+
+第五步：在PlayMusicView中创建启动光盘和指针动画的方法playMusic()，以及停止光盘者指针动画的方法stopMusic()，实例：
+    private FrameLayout mFlPlayMusic;     //这个是整个光盘界面的FrameLayout布局
+    private ImageView mIvIcon(光盘图片), mIvNeedle(指针), mIvPlay(显示音乐播放的图标);    //定义完这些控件之后，都需要在init()方法中进行控件绑定
+    //播放音乐
+    public void playMusic(String path){
+        isPlaying = true;
+        mIvPlay.setVisibility(View.GONE);
+        mFlPlayMusic.startAnimation(mPlayMusicAnim);
+        mIvNeedle.startAnimation(mPlayNeedleAnim);}        //动画走起来
+
+        //停止播放音乐
+        public void stopMusic () {
+            isPlaying = false;
+            mIvPlay.setVisibility(View.VISIBLE);
+            mFlPlayMusic.clearAnimation();
+            mIvNeedle.startAnimation(mStopNeedleAnim); }       //动画停掉
+
+第六步：在PlayMusicView中创建切换音乐播放的方法trigger()，实例：
+    private boolean isPlaying
+    private void trigger() throws IOException {
+        if (isPlaying) {
+            stopMusic();      //如果是正在播放音乐，点击事件就是停止掉音乐
+        } else {
+            playMusic();}}    //如果是停止音乐的状态，点击事件就是播放音乐
+
+第七步：在PlayMusicActivity的initView()方法中添加启动音乐播放的逻辑，实例：
+public class PlayMusicActivity extends BaseActivity {
+    private void initView () throws IOException {
+        mPlayMusicView = fd(R.id.play_music_view);         //绑定音乐播放的界面View
+        mPlayMusicView.setMusicIcon("图片网址");    //设置音乐播放界面中的光盘的图片(会被处理成一张圆形的图片)
+        mPlayMusicView.playMusic();     //启动音乐播放
+
