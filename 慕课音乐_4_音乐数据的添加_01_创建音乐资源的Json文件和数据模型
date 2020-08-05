@@ -1,0 +1,106 @@
+
+总结：这部分是创建音乐资源的Json文件，以及定义音乐资源对应的数据模型
+1.创建一个DataSource.json文件(音乐资源文件)
+2.创建一个音乐资源的数据模型MusicSourceModel，这是对应于DataSource.json文件中的最外层的数据模型
+3.创建一个音乐专辑歌单的数据模型AlbumModel，这是对应一张音乐歌单的数据模型
+4.创建一条音乐数据的数据模型MusicModel，这是对应于一条音乐数据的数据模型
+
+
+
+知识点一：创建一个DataSource.json文件
+
+第一步：在DataSource中最外层的字段是album[]数组和hot[]数组，album[]数组的数组单元是：
+    {
+      "albumId": "1",          //每一个专辑歌单的数据
+      "name": "Nostalgic",
+      "poster": "http://res.lgdsunday.club/poster-9.png",
+      "playNum": "203.3万",
+      "list": [
+        {
+          "musicId": "101",             //每一条音乐的数据
+          "name": "Nostalgic Piano",
+          "poster": "http://res.lgdsunday.club/poster-1.png",
+          "path": "http://res.lgdsunday.club/Nostalgic%20Piano.mp3",
+          "author": "Rafael Krux"},
+        {
+          "musicId": "102",
+          "name": "La Citadelle",
+          "poster": "http://res.lgdsunday.club/poster-2.png",
+          "path": "http://res.lgdsunday.club/La%20Citadelle.mp3",
+          "author": "Komiku"},
+
+        {
+          "musicId": "108",
+          "name": "Amazing Grace",
+          "poster": "http://res.lgdsunday.club/poster-8.png",
+          "path": "http://res.lgdsunday.club/Amazing%20Grace.mp3",
+          "author": "Kevin MacLeod"}
+      ]        //这里都是属于list[]数组的
+    },
+
+第二步：hot[]数组的数组单元是：
+  "hot": [
+    {
+      "musicId": "7",        //每一条音乐的数据
+      "name": "Nostalgic Piano",
+      "poster": "http://res.lgdsunday.club/poster-1.png",
+      "path": "http://res.lgdsunday.club/Nostalgic%20Piano.mp3",
+      "author": "Rafael Krux"},
+    {
+      "musicId": "8",
+      "name": "La Citadelle",
+      "poster": "http://res.lgdsunday.club/poster-2.png",
+      "path": "http://res.lgdsunday.club/La%20Citadelle.mp3",
+      "author": "Komiku"},
+
+
+
+
+
+知识点二：创建一个音乐资源的数据模型MusicSourceModel，这是对应于DataSource.json文件中的最外层的数据模型
+
+第一步：在MusicSourceModel中定义相应的变量参数，实例：
+public class MusicSourceModel extends RealmObject {
+    //使用RealmList来描述一个数据库中的数组
+    private RealmList<AlbumModel> album;    //这里的泛型是AlbumModel，也就是一张音乐歌单的数据
+    private RealmList<MusicModel> hot;    //这里的泛型是MusicModel，也就是一条音乐数据
+    public RealmList<AlbumModel> getAlbum() {
+        return album;}
+    public void setAlbum(RealmList<AlbumModel> album) {
+        this.album = album;}
+    public RealmList<MusicModel> getHot() {
+        return hot;}
+    public void setHot(RealmList<MusicModel> hot) {
+        this.hot = hot;}}
+
+
+
+
+
+知识点三：创建一个音乐专辑歌单的数据模型AlbumModel，这是对应一张音乐歌单的数据模型
+
+第一步：在AlbumModel中定义相应的变量参数，实例：
+public class AlbumModel extends RealmObject {
+    private String albumId;
+    private String name;
+    private String poster;
+    private String playNum;
+    private RealmList<MusicModel> list;      //这里的泛型是MusicModel，也就是一条音乐数据
+    ... }   //这里是变量参数的Getter和Setter方法
+
+
+
+
+
+知识点四：创建一条音乐数据的数据模型MusicModel，这是对应于一条音乐数据的数据模型
+
+第一步：在MusicModel中定义相应的变量参数，实例：
+public class MusicModel extends RealmObject {       //一条音乐数据的数据模型，包含相应的变量参数
+    private String musicId;
+    private String name;
+    private String poster;
+    private String path;
+    private String author;
+    ... }    //这里是变量参数的Getter和Setter方法
+
+
