@@ -1,0 +1,110 @@
+
+总结：这部分是利用SharedPreferences保存用户的登录标记，用于在WelcomeActivity中直接进行登录
+1.创建一个用户自动登录的工具类UserHelper，它在SharedPreferences保存用户的登录标记之后，
+全局单例类UserHelper会保存用户的登录信息(也就是标记用户唯一性的参数phone)
+2.创建一个SharedPreferences的工具类SPUtils，里面是利用SharedPreferences操作用户登录标记的相关逻辑
+3.创建常量保存类SPConstants，用于保存需要用到的各种常量，里面主要保存了SharedPreferences的文件名和内容名
+4.完善UserUtils中的用户登录验证逻辑
+
+用户登录执行流程：当用户打开应用程序时，检测SharedPreferences是否存在用户登录标记 -> 如果存在则为用户进行赋值，如果不存在则进入登录页面
+当用户在登录页面进行登录时，利用SharedPreferences保存用户的登录信息，用户的手机号，然后利用全局单例类UserHelper(相当于一个变量参数)保存用户登录信息 -> 保存成功则进入主页
+
+
+
+知识点一：创建一个用户自动登录的工具类UserHelper，它在SharedPreferences保存用户的登录标记之后，
+全局单例类UserHelper会保存用户的登录信息(也就是标记用户唯一性的参数phone)
+
+第一步：在UserHelper中：1.设置UserHelper为一个单例模式，实例：
+public class UserHelper {               //这个全局单例类，可以看作是一个全局变量参数
+    private static UserHelper instance;
+    private UserHelper () {};     //构造函数还是要的
+    public static UserHelper getInstance() {
+        if (instance == null)  {
+            synchronized (UserHelper.class) {
+                if (instance == null) {
+                    instance = new UserHelper();}}}
+        return instance;}
+
+第二步：在UserHelper中：2.添加一个用户标记(标记用户的唯一性)，这里就是用户的phone，实例：
+public class UserHelper {
+    private String phone;
+    public String getPhone() {
+        return phone;}
+    public void setPhone(String phone) {
+        this.phone = phone;}}
+
+
+
+
+
+知识点二：创建一个SharedPreferences的工具类SPUtils，里面是利用SharedPreferences操作用户登录标记的相关逻辑
+
+第一步：在SPUtils中：1.创建一个saveUser()方法，用于保存用户标记到SharedPreferences之中，实例：
+    //当用户登录时，利用SharedPreferences保存用户登录标记
+    public static boolean saveUser(Context context, String phone) {
+        SharedPreferences sp = context.getSharedPreferences(SPConstants.SP_NAME_USER, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(SPConstants.SP_KEY_PHONE, phone);
+        boolean result = editor.commit();
+        return result;}
+
+第二步：在SPUtils中：2.创建一个isLoginUser()方法，用于验证是否存在已登录用户，实例：
+    //验证是否存在已登录用户
+    public static boolean isLoginUser (Context context) {
+        boolean result = false;       //每次都是把默认返回值先定义好
+        SharedPreferences sp = context.getSharedPreferences(SPConstants.SP_NAME_USER, Context.MODE_PRIVATE);
+        String phone = sp.getString(SPConstants.SP_KEY_PHONE, "");
+        if (!TextUtils.isEmpty(phone)) {
+            result = true;
+            UserHelper.getInstance().setPhone(phone);}
+        return result;}
+
+
+
+
+
+
+知识点三：创建常量保存类SPConstants，用于保存需要用到的各种常量
+
+第一步：在SPConstants中保存各种常量，实例：
+public class SPConstants {
+    public static final String SP_NAME_USER = "user";       //这里是因为在values文件夹中保存的常量只能在xml布局文件中使用
+    public static final String SP_KEY_PHONE = "phone";}
+
+
+
+
+
+
+知识点四：完善UserUtils中的用户登录验证逻辑
+
+第一步：完善UserUtils中的用户登录验证逻辑validateLogin()，在里面使用SPUtils保存用户的登录标记，
+public class UserUtils {
+    public static boolean validateLogin(Context context, String phone, String password) {
+        ...    
+        //保存用户登录标记
+        boolean isSave = SPUtils.saveUser(context, phone);
+        if(!isSave) {
+            Toast.makeText(context, "系统错误，请稍后重试", Toast.LENGTH_SHORT).show();
+            return false;}
+        //在全局单例类之中保存用户标记，也就是用户的手机号
+        UserHelper.getInstance().setPhone(phone);
+        ... }
+
+第二步：在UserUtils中创建一个validateUserLogin()方法，用于验证是否存在已登录用户，实例：
+    public static boolean validateUserLogin (Context context) {
+        return SPUtils.isLoginUser(context);}
+
+第三步：在WelcomeActivity中进行已登录用户的验证逻辑(验证SharedPreferences中是否存在用户标记)，实例：
+public class WelcomeActivity extends BaseActivity {
+    private void init() {
+        final boolean isLogin = UserUtils.validateUserLogin(this);     //判断用户是否已经登录过了
+        mTimer = new Timer(); 
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                toLogin();
+                if (isLogin) {
+                    toMain();       //用户已经登录过了，直接进入主页
+                }else {
+                    toLogin();}}}, 3 * 1000);}
