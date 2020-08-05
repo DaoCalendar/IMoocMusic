@@ -1,0 +1,80 @@
+
+总结：这部分是完善MediaPlayerHelp，在里面添加监听音乐播放完成的方法，以及设置MusicService为一个前台服务
+1.完善MediaPlayerHelp，在里面添加监听音乐播放完成的方法
+2.完善MusicService，创建一个startForeground()方法，设置服务前台可见
+
+
+
+
+知识点一：完善MediaPlayerHelp，在里面添加监听音乐播放完成的方法
+
+第一步：在MediaPlayerHelp中的setPath()方法中添加监听音乐播放完成的方法setOnCompletionListener()，实例：
+        //监听音乐播放完成
+        mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                if (onMediaPlayerHelperListener != null) {
+                    onMediaPlayerHelperListener.onCompletion(mp);}}});     //这是一个回调方法，谁调用谁实现，MusicService调用，它自己实现这个方法
+
+第二步：在MusicService中的playMusic()方法中实现onCompletion()方法，实例：
+        public void playMusic() {
+            if (mMediaPlayerHelp.getPath() != null && mMediaPlayerHelp.getPath().equals(mMusicModel.getPath())) {
+                mMediaPlayerHelp.start();
+            }else{
+                try {
+                    mMediaPlayerHelp.setPath(mMusicModel.getPath());
+                } catch (IOException e) {
+                    e.printStackTrace();}
+                mMediaPlayerHelp.setOnMediaPlayerHelperListener(new MediaPlayerHelp.OnMediaPlayerHelperListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        mMediaPlayerHelp.start();}
+                    @Override
+                    public void oncompletion(MediaPlayer mp) {          //在播放音乐playMusic()方法中监听音乐播放是否完成
+                        stopSelf();}});}}
+
+
+
+
+
+
+知识点二：完善MusicService，创建一个startForeground()方法，设置服务前台可见
+
+第一步：在MusicService中创建前台可见的方法startForeground()，实例：
+public class MusicService extends Service {
+    //设置服务前台可见
+    private void startForeground () {
+        String CHANNEL_ONE_ID = "com.primedu.cn";      //在android8.0以上需要设置NotificationChannel
+        String CHANNEL_ONE_NAME = "Channel One";
+        //通知栏点击跳转的intent
+        PendingIntent pendingIntent = PendingIntent
+                .getActivity(this, 0,
+                        new Intent(this, WelcomeActivity.class), PendingIntent.FLAG_CANCEL_CURRENT);
+        //创建Notification
+        Notification.Builder builder = new Notification.Builder(this)
+                .setContentTitle(mMusicModel.getName())
+                .setContentText(mMusicModel.getAuthor())
+                .setSmallIcon(R.mipmap.logo)
+                .setContentIntent(pendingIntent);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            //修改安卓8.1以上系统报错
+            NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ONE_ID, CHANNEL_ONE_NAME, NotificationManager.IMPORTANCE_MIN);
+            notificationChannel.enableLights(false);//如果使用中的设备支持通知灯，则说明此通知通道是否应显示灯
+            notificationChannel.setShowBadge(false);//是否显示角标
+            notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            assert manager != null;
+            manager.createNotificationChannel(notificationChannel);
+            builder.setChannelId(CHANNEL_ONE_ID);}
+        Notification notification = builder.build();
+        //设置notification在前台展示
+        startForeground(NOTIFICATION_ID, notification);}
+
+第二步：使用startForeground()方法，在MusicService的MusicBind类中的setMusic()方法(也就是设置音乐的MusicModel的时候，设置MusicService为前台可见)中调用startForeground()方法，
+设置MusicService为前台可见的，实例：
+public class MusicService extends Service {
+    public class MusicBind extends Binder {
+        public void setMusic(MusicModel musicModel) {
+            mMusicModel = musicModel;
+            startForeground();}
