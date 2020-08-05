@@ -1,0 +1,59 @@
+
+总结：这部分是添加登录界面LoginActivity的登录验证逻辑
+1.在LoginActivity中，实现登录按钮的点击事件
+2.在UserUtils中创建验证用户输入的账号、密码是否是数据库中的方法validateLogin()
+3.在RealmHelp中创建一个验证用户信息(账号、密码)的方法validateUser()
+
+
+
+知识点一：完善登录界面LoginActivity的登录逻辑，也就是登录按钮的点击事件
+
+第一步：在LoginActivity中：1.实现登录按钮的点击事件，实例：
+    public void onCommitClick(View v){
+        String phone = mInputPhone.getInputStr();
+        String password = mInputPassword.getInputStr();
+        //验证用户输入是否合法
+        if(!UserUtils.validateLogin(this, phone, password)){    //利用UserUtils工具类的validateLogin()方法验证用户输入的账号、密码是否是Realm数据库中的
+            return;}
+        //跳转到应用主页
+        Intent intent = new Intent( this, MainActivity.class);
+        startActivity(intent);      //登录成功，跳转到MainActivity之中
+        finish();}
+
+第二步：在UserUtils中创建验证用户输入的账号、密码是否是数据库中的方法validateLogin()，实例：
+    //创建一个静态方法验证登录用户输入的合法性
+    public static boolean validateLogin(Context context, String phone, String password) {
+        //简单的
+        //RegexUtils.isMobileSimple(phone);
+        //精确的
+        if (!RegexUtils.isMobileExact(phone)) {
+            Toast.makeText(context, "无效的手机号", Toast.LENGTH_SHORT).show();
+            return false;}
+        if (TextUtils.isEmpty(password)) {
+            Toast.makeText(context, "请输入密码", Toast.LENGTH_SHORT).show();
+            return false;}            //前面都是进行基础的验证：输入合法性验证、非空验证
+
+        //1.用户当前手机号是否已经被注册了
+        //2.用户输入的手机号和密码是否匹配(手机号即使已经注册过了，密码也不一定正确)
+        if (!UserUtils.userExistFromPhone(phone)) {
+            Toast.makeText(context, "当前手机号未注册", Toast.LENGTH_SHORT).show();
+            return false;}
+        RealmHelp realmHelp = new RealmHelp();        //这里需要在数据库工具类RealmHelp
+        boolean result = realmHelp.validateUser(phone, EncryptUtils.encryptMD5ToString(password));
+        if (!result) {
+            Toast.makeText(context, "手机号或者密码不正确", Toast.LENGTH_SHORT).show();
+            return false;}
+        realmHelp.close();
+        return true;}
+
+第三步：在RealmHelp中创建一个验证用户信息(账号、密码)的方法validateUser()，实例：
+    //验证用户信息
+    public boolean validateUser (String phone, String password) {
+        boolean result = false;      //定义一个flag，默认返回的结果是false
+        RealmQuery<UserModel> query = mRealm.where(UserModel.class);
+        query = query.equalTo("phone", phone)
+                .equalTo("password", password);          //两个equalTo()方法分别比较用户输入的账号和密码
+        UserModel userModel = query.findFirst();
+        if (userModel != null) {
+            result = true;}
+        return result;}
